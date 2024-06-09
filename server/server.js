@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(cors({
     origin: ["http://localhost:3000"],
-    methods: ["POST", "GET"],
+    methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true
 }));
 app.use(cookieParser());
@@ -74,7 +74,56 @@ app.post('/register', (req, res) => {
             return res.json({ Status: "Success" });
         });
     });
+})
+
+app.post('/create-notes', (req, res) => {
+    const sql = "INSERT INTO notes (`title`, `content`) VALUES (?, ?)";
+    const { title, content } = req.body;
+  
+    if (!title || !content) {
+      return res.status(400).json({ Error: "Please provide title and content" });
+    }
+  
+    const values = [title, content];
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('Error inserting notes:', err);
+        return res.status(500).json({ Error: "Inserting notes Error in server" });
+      }
+      return res.json({ Status: "Success" });
+    });
+  });
+
+  app.get('/notes', (req, res) => {
+    const sql = "SELECT * FROM notes";
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('Error fetching notes:', err);
+        return res.status(500).json({ error: 'Error fetching notes' });
+      }
+      res.json(result);
+    });
 });
+
+
+app.delete('/notes/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = "DELETE FROM notes WHERE id = ?";
+
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error deleting note:', err);
+            return res.status(500).json({ Error: "Deleting note error in server" });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ Error: "Note not found" });
+        }
+        return res.json({ Status: "Success" });
+    });
+});
+
+  
+  
 
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
